@@ -226,6 +226,158 @@ export function formatDate(timestamp) {
 }
 
 /**
+ * Obtiene la fecha en formato YYYY-MM-DD para un timestamp
+ * @param {number} timestamp - Timestamp en milisegundos
+ * @returns {string} - Fecha en formato YYYY-MM-DD
+ */
+export function getDateKey(timestamp) {
+  try {
+    if (!timestamp) return null
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) return null
+
+    return date.toISOString().split('T')[0]
+  } catch (error) {
+    console.error('Error al obtener date key:', error)
+    return null
+  }
+}
+
+/**
+ * Obtiene el nombre del día relativo (Hoy, Ayer, etc.)
+ * @param {string} dateKey - Fecha en formato YYYY-MM-DD
+ * @returns {string} - Nombre del día
+ */
+export function getRelativeDayName(dateKey) {
+  try {
+    if (!dateKey) return 'Fecha desconocida'
+
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const todayKey = getDateKey(today.getTime())
+    const yesterdayKey = getDateKey(yesterday.getTime())
+
+    if (dateKey === todayKey) return 'Hoy'
+    if (dateKey === yesterdayKey) return 'Ayer'
+
+    // Para fechas más antiguas, mostrar fecha completa
+    const date = new Date(dateKey + 'T00:00:00')
+    const diffTime = Math.abs(today - date)
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays <= 7) {
+      return date.toLocaleDateString('es-ES', { weekday: 'long' })
+    } else {
+      return date.toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        year: today.getFullYear() !== date.getFullYear() ? 'numeric' : undefined,
+      })
+    }
+  } catch (error) {
+    console.error('Error al obtener nombre de día relativo:', error)
+    return 'Fecha desconocida'
+  }
+}
+
+/**
+ * Agrupa entradas del timeline por día
+ * @param {Array} timeline - Array de entradas
+ * @returns {Array} - Array de objetos con fecha y entradas
+ */
+export function groupTimelineByDay(timeline) {
+  try {
+    if (!Array.isArray(timeline) || timeline.length === 0) {
+      return []
+    }
+
+    // Ordenar por timestamp descendente (más reciente primero)
+    const sortedTimeline = [...timeline].sort((a, b) => b.timestamp - a.timestamp)
+
+    // Agrupar por día
+    const grouped = {}
+
+    sortedTimeline.forEach((entry) => {
+      const dateKey = getDateKey(entry.timestamp)
+      if (dateKey) {
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = {
+            dateKey,
+            dayName: getRelativeDayName(dateKey),
+            entries: [],
+          }
+        }
+        grouped[dateKey].entries.push(entry)
+      }
+    })
+
+    // Convertir a array y ordenar por fecha (más reciente primero)
+    return Object.values(grouped).sort((a, b) => b.dateKey.localeCompare(a.dateKey))
+  } catch (error) {
+    console.error('Error al agrupar timeline por día:', error)
+    return []
+  }
+}
+
+/**
+ * Filtra entradas del timeline por texto de búsqueda
+ * @param {Array} timeline - Array de entradas
+ * @param {string} searchText - Texto de búsqueda
+ * @returns {Array} - Array filtrado
+ */
+export function filterTimeline(timeline, searchText) {
+  try {
+    if (!Array.isArray(timeline) || !searchText || searchText.trim() === '') {
+      return timeline
+    }
+
+    const search = searchText.toLowerCase().trim()
+
+    return timeline.filter((entry) => {
+      // Buscar en título
+      const title = (entry.title || '').toLowerCase()
+      if (title.includes(search)) return true
+
+      // Buscar en dominio
+      const domain = (entry.domain || '').toLowerCase()
+      if (domain.includes(search)) return true
+
+      // Buscar en URL
+      const url = (entry.url || '').toLowerCase()
+      if (url.includes(search)) return true
+
+      return false
+    })
+  } catch (error) {
+    console.error('Error al filtrar timeline:', error)
+    return timeline
+  }
+}
+
+/**
+ * Resalta términos de búsqueda en un texto
+ * @param {string} text - Texto original
+ * @param {string} searchTerm - Término a resaltar
+ * @returns {string} - Texto con términos resaltados
+ */
+export function highlightSearchTerm(text, searchTerm) {
+  try {
+    if (!text || !searchTerm || searchTerm.trim() === '') {
+      return text || ''
+    }
+
+    const search = searchTerm.trim()
+    const regex = new RegExp(`(${search})`, 'gi')
+    return text.replace(regex, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>')
+  } catch (error) {
+    console.error('Error al resaltar término:', error)
+    return text || ''
+  }
+}
+
+/**
  * Debounce function para limitar la frecuencia de ejecución
  * @param {Function} func - Función a ejecutar
  * @param {number} wait - Tiempo de espera en ms

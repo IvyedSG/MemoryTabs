@@ -19,10 +19,15 @@
 
         <!-- Información principal -->
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-slate-800 line-clamp-2 leading-tight" :title="entry.title">
-            {{ entry.title || entry.domain || 'Sin título' }}
-          </p>
-          <p class="text-xs text-slate-500 truncate">{{ entry.domain }}</p>
+          <p
+            class="text-sm font-medium text-slate-800 line-clamp-2 leading-tight"
+            :title="entry.title"
+            v-html="highlightedTitle"
+          ></p>
+          <p
+            class="text-xs text-slate-500 truncate"
+            v-html="highlightedDomain"
+          ></p>
         </div>
       </div>
 
@@ -56,18 +61,34 @@
 
 <script setup>
 /* global chrome */
+import { computed } from 'vue';
 import { useFormatting } from '../composables/usePopup.js';
+import { highlightSearchTerm } from '../utils/helpers.js';
 
 const props = defineProps({
   entry: {
     type: Object,
     required: true
+  },
+  searchTerm: {
+    type: String,
+    default: ''
   }
 });
 
 const emit = defineEmits(['visit']);
 
 const { formatTime, formatDurationShort } = useFormatting();
+
+// Texto resaltado para búsqueda
+const highlightedTitle = computed(() => {
+  const title = props.entry.title || props.entry.domain || 'Sin título';
+  return highlightSearchTerm(title, props.searchTerm);
+});
+
+const highlightedDomain = computed(() => {
+  return highlightSearchTerm(props.entry.domain || '', props.searchTerm);
+});
 
 /**
  * Maneja errores de carga de favicon

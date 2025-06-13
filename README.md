@@ -9,6 +9,9 @@ Una extensión de Chrome que permite rastrear y visualizar tu cronología de nav
 - ⏱️ **Seguimiento de tiempo**: Registra cuánto tiempo pasas en cada sitio
 - 🗂️ **Gestión de sesiones**: Mantiene el historial entre sesiones del navegador
 - 🎨 **Interfaz moderna**: Diseño limpio con Tailwind CSS
+- 📆 **Agrupación por días**: Organiza el timeline por días (Hoy, Ayer, etc.)
+- 🔍 **Búsqueda en tiempo real**: Busca por título o dominio con resaltado de términos
+- 🎯 **Navegación intuitiva**: Separadores visuales y contadores de páginas
 
 ## Estructura del Proyecto
 
