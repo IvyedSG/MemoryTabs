@@ -200,54 +200,77 @@ export class TabManager {
       }
       this.lastScreenshotTime = now
 
-      if (this.activeTabInfo.windowId && typeof this.activeTabInfo.windowId === 'number') {
-        console.log(
-          `Intentando capturar screenshot de pestaña ${this.activeTabInfo.tabId} en ventana ${this.activeTabInfo.windowId}`,
-        )
+      if (!this.activeTabInfo.windowId || typeof this.activeTabInfo.windowId !== 'number') {
+        console.log('No se puede capturar screenshot: windowId inválido')
+        return
+      }
 
-        // Verificar que la pestaña sigue siendo válida y activa antes de capturar
-        try {
-          // Obtener información actual de la pestaña
-          const currentTab = await this.getTabInfo(this.activeTabInfo.tabId)
-          if (!currentTab) {
-            console.log('Pestaña no existe, omitiendo captura de screenshot')
-            return
-          }
+      console.log(
+        `Intentando capturar screenshot de pestaña ${this.activeTabInfo.tabId} en ventana ${this.activeTabInfo.windowId}`,
+      )
 
-          // Verificar que la URL no haya cambiado
-          if (currentTab.url !== this.activeTabInfo.url) {
-            console.log('URL de pestaña cambió, omitiendo captura de screenshot')
-            console.log(`Expected: ${this.activeTabInfo.url}`)
-            console.log(`Current: ${currentTab.url}`)
-            return
-          }
-
-          // Verificar que la pestaña esté activa en su ventana
-          const tabs = await new Promise((resolve) => {
-            chrome.tabs.query({ active: true, windowId: this.activeTabInfo.windowId }, resolve)
-          })
-
-          if (!tabs || tabs.length === 0 || tabs[0].id !== this.activeTabInfo.tabId) {
-            console.log('Pestaña no está activa en su ventana, omitiendo captura de screenshot')
-            return
-          }
-        } catch (error) {
-          console.log('Error verificando pestaña, omitiendo captura de screenshot:', error.message)
+      // Verificar que la pestaña sigue siendo válida y activa antes de capturar
+      try {
+        // Obtener información actual de la pestaña
+        const currentTab = await this.getTabInfo(this.activeTabInfo.tabId)
+        if (!currentTab) {
+          console.log('Pestaña no existe, omitiendo captura de screenshot')
           return
         }
 
+        // Verificar estado de carga de la pestaña
+        if (currentTab.status !== 'complete') {
+          console.log(
+            `Pestaña aún está cargando (status: ${currentTab.status}), omitiendo captura de screenshot`,
+          )
+          return
+        }
+
+        // Verificar que la URL no haya cambiado
+        if (currentTab.url !== this.activeTabInfo.url) {
+          console.log('URL de pestaña cambió, omitiendo captura de screenshot')
+          console.log(`Expected: ${this.activeTabInfo.url}`)
+          console.log(`Current: ${currentTab.url}`)
+          return
+        }
+
+        // Verificar que la pestaña esté activa en su ventana
+        const tabs = await new Promise((resolve) => {
+          chrome.tabs.query({ active: true, windowId: this.activeTabInfo.windowId }, resolve)
+        })
+
+        if (!tabs || tabs.length === 0 || tabs[0].id !== this.activeTabInfo.tabId) {
+          console.log('Pestaña no está activa en su ventana, omitiendo captura de screenshot')
+          return
+        }
+
+        // Esperar un poco más para asegurar que la página esté completamente renderizada
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      } catch (error) {
+        console.log('Error verificando pestaña, omitiendo captura de screenshot:', error.message)
+        return
+      }
+
+      try {
         const screenshot = await ScreenshotManager.capture(
           this.activeTabInfo.tabId,
           this.activeTabInfo.windowId,
         )
         // Actualizar screenshot independientemente del resultado
-        // Si es null (deshabilitado), limpiar screenshot anterior
-        this.activeTabInfo.screenshot = screenshot
-      } else {
-        console.log('No se puede capturar screenshot: windowId inválido')
+        // Si es null (error o deshabilitado), mantener screenshot anterior si existe
+        if (screenshot) {
+          this.activeTabInfo.screenshot = screenshot
+          console.log('Screenshot capturado y actualizado exitosamente')
+        } else {
+          console.log('No se pudo capturar screenshot, manteniendo screenshot anterior si existe')
+        }
+      } catch (screenshotError) {
+        console.log('Error específico al capturar screenshot:', screenshotError.message)
+        // No actualizar el screenshot en caso de error, mantener el anterior
       }
     } catch (error) {
-      console.error('Error al capturar screenshot:', error)
+      console.error('Error general al capturar screenshot:', error)
+      // Continuar sin screenshot, no interrumpir el flujo principal
     }
   }
 

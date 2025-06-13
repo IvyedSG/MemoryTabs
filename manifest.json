@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Memory Tabs",
+  "name": "Linetabs",
   "description": "Timeline of your tabs",
   "version": "0.1.0",
   "action": {

@@ -5,7 +5,7 @@ import { StorageManager } from '../utils/storage.js'
 import { ScreenshotManager } from '../utils/screenshot.js'
 import { RECORDING_ACTIONS, EXTENSION_CONFIG } from '../utils/constants.js'
 
-console.log('Memory Tabs background script loaded')
+console.log('Linetabs background script loaded')
 
 /**
  * Clase principal del background script

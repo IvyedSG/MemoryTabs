@@ -1,4 +1,4 @@
-# Memory Tabs
+# Linetabs
 
 Una extensión de Chrome que permite rastrear y visualizar tu cronología de navegación con capturas de pantalla.
 

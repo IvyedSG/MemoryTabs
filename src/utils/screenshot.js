@@ -1,4 +1,5 @@
 /* global chrome */
+import { isCapturableUrl } from './helpers.js'
 
 /**
  * Clase para manejar capturas de pantalla
@@ -64,7 +65,22 @@ export class ScreenshotManager {
         return null
       }
 
-      console.log(`Verificado: pestaña ${tabId} está activa, procediendo con captura`)
+      // Verificar que la pestaña esté completamente cargada
+      if (activeTab.status !== 'complete') {
+        console.log(
+          `Pestaña ${tabId} aún está cargando (status: ${activeTab.status}), omitiendo screenshot`,
+        )
+        return null
+      }
+
+      // Verificar que la URL sea capturable
+      const url = activeTab.url || ''
+      if (!isCapturableUrl(url)) {
+        console.log(`URL no capturable: ${url}, omitiendo screenshot`)
+        return null
+      }
+
+      console.log(`Verificado: pestaña ${tabId} está activa y lista, procediendo con captura`)
     } catch (error) {
       console.log('Error verificando pestaña activa:', error.message)
       return null
@@ -77,14 +93,50 @@ export class ScreenshotManager {
         quality: 50,
       }
 
+      // Timeout para evitar que la captura se cuelgue
+      const timeoutId = setTimeout(() => {
+        console.log('Timeout al capturar screenshot, resolviendo con null')
+        resolve(null)
+      }, 5000) // 5 segundos timeout
+
       try {
         chrome.tabs.captureVisibleTab(windowId, options, (dataUrl) => {
-          if (chrome.runtime.lastError) {
-            const error = chrome.runtime.lastError.message || chrome.runtime.lastError
+          clearTimeout(timeoutId)
 
-            // Si es un error de permisos, simplemente loggear y continuar sin screenshot
+          if (chrome.runtime.lastError) {
+            const error = chrome.runtime.lastError.message || chrome.runtime.lastError.toString()
+
+            // Manejar errores específicos
             if (error.includes('activeTab') || error.includes('permission')) {
               console.log('Permisos de activeTab no disponibles, continuando sin screenshot')
+              resolve(null)
+              return
+            }
+
+            if (error.includes('image readback failed') || error.includes('readback failed')) {
+              console.log(
+                'Error de lectura de imagen (readback failed), probablemente la página no está lista',
+              )
+              resolve(null)
+              return
+            }
+
+            if (
+              error.includes('Cannot access') ||
+              error.includes('Cannot capture') ||
+              error.includes('not supported') ||
+              error.includes('not available')
+            ) {
+              console.log('No se puede acceder a la pestaña para captura:', error)
+              resolve(null)
+              return
+            }
+
+            if (
+              error.includes('Extension context invalidated') ||
+              error.includes('context invalidated')
+            ) {
+              console.log('Contexto de extensión invalidado, omitiendo captura')
               resolve(null)
               return
             }
@@ -106,6 +158,7 @@ export class ScreenshotManager {
           resolve(dataUrl)
         })
       } catch (error) {
+        clearTimeout(timeoutId)
         console.error('Excepción al capturar screenshot:', error)
         resolve(null)
       }

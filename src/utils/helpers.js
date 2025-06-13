@@ -394,3 +394,36 @@ export function debounce(func, wait) {
     timeout = setTimeout(later, wait)
   }
 }
+
+/**
+ * Verifica si una URL es capturable para screenshots
+ * @param {string} url - La URL a verificar
+ * @returns {boolean} - true si la URL es capturable
+ */
+export function isCapturableUrl(url) {
+  try {
+    if (!url || typeof url !== 'string') return false
+
+    // URLs que no se pueden capturar
+    const nonCapturablePatterns = [
+      'chrome://',
+      'chrome-extension://',
+      'moz-extension://',
+      'about:',
+      'edge://',
+      'opera://',
+      'devtools://',
+      'view-source:',
+      'data:',
+      'javascript:',
+      'mailto:',
+      'tel:',
+      'file://',
+    ]
+
+    return !nonCapturablePatterns.some((pattern) => url.startsWith(pattern))
+  } catch (error) {
+    console.error('Error verificando URL capturable:', error)
+    return false
+  }
+}

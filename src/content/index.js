@@ -1,5 +1,5 @@
 /* global chrome */
-console.log('Memory Tabs content script loaded')
+console.log('Linetabs content script loaded')
 
 let recording = false
 let events = []

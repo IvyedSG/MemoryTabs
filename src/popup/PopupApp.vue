@@ -11,7 +11,7 @@
     <header class="p-4 bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div class="flex items-center justify-between">
         <div class="flex flex-col">
-          <h1 class="text-xl font-semibold text-slate-800">Memory Tabs</h1>
+          <h1 class="text-xl font-semibold text-slate-800">Linetabs</h1>
           <p class="text-sm text-slate-500">{{ formattedDate }}</p>
         </div>
         <div class="flex gap-6">
